@@ -76,7 +76,7 @@ const Navbar: React.FC = () => {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="md:hidden absolute top-full left-0 w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-6 flex flex-col gap-4 shadow-2xl">
-           {['Skills', 'Projects', 'About', 'Blog'].map((item) => (
+           {['About', 'Projects', 'Hackathons'].map((item) => (
             <a
               key={item}
               href={`#${item.toLowerCase()}`}
