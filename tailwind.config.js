@@ -12,6 +12,7 @@ module.exports = {
       animation: {
         pulse: "pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         blob: "blob 7s infinite",
+        "spin-reverse": "spin-reverse 20s linear infinite",
       },
       keyframes: {
         blob: {
@@ -26,6 +27,14 @@ module.exports = {
           },
           "100%": {
             transform: "translate(0px, 0px) scale(1)",
+          },
+        },
+        "spin-reverse": {
+          from: {
+            transform: "rotate(360deg)",
+          },
+          to: {
+            transform: "rotate(0deg)",
           },
         },
       },

@@ -74,7 +74,25 @@ const Hero: React.FC = () => {
           <div className="absolute inset-0 bg-gradient-to-tr from-brand-500/20 to-purple-500/20 rounded-full blur-3xl transform scale-110"></div>
           
           <div className="relative w-72 h-72 md:w-96 md:h-96">
-            <div className="absolute inset-0 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-full animate-[spin_10s_linear_infinite]"></div>
+            {/* Spinning curved text ring - positioned outside the image */}
+            <svg 
+              className="absolute -inset-8 md:-inset-10 w-[calc(100%+4rem)] h-[calc(100%+4rem)] md:w-[calc(100%+5rem)] md:h-[calc(100%+5rem)] animate-[spin_15s_linear_infinite]" 
+              viewBox="0 0 200 200"
+            >
+              <defs>
+                <path
+                  id="circlePath"
+                  d="M 100, 100 m -90, 0 a 90,90 0 1,1 180,0 a 90,90 0 1,1 -180,0"
+                  fill="none"
+                />
+              </defs>
+              <text className="fill-slate-700 dark:fill-slate-300 text-[10px] font-bold tracking-[0.25em] uppercase">
+                <textPath href="#circlePath" startOffset="0%">
+                  HTML • CSS • JavaScript • FastAPI • Next.js • Python • TypeScript • 
+                </textPath>
+              </text>
+            </svg>
+            
             <div className="absolute inset-4 rounded-full overflow-hidden border-4 border-white dark:border-slate-800 shadow-2xl">
               {/* REPLACE THIS SRC WITH YOUR ACTUAL IMAGE URL */}
               <img 

@@ -86,9 +86,7 @@ const Navbar: React.FC = () => {
               {item}
             </a>
           ))}
-          <button className="w-full mt-4 py-3 rounded-xl bg-brand-600 text-white font-semibold">
-            Contact Me
-          </button>
+     
         </div>
       )}
     </nav>
