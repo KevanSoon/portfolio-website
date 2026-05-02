@@ -1,0 +1,21 @@
+/* src/app/globals.css */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'DM Sans', system-ui, sans-serif;
+  --white: oklch(97% 0.004 240);
+}
+
+html { scroll-behavior: auto; }
+
+body {
+  background: #060810;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
