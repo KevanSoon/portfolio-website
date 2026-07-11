@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kevan Soon — Software Engineer</title>
+    <meta
+      name="description"
+      content="Portfolio of Kevan Soon — software engineer in Singapore. AI, web, and product engineering, folded with care."
+    />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕊️</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@200;300;400&family=Inter:wght@300;400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body class="loading">
+    <div id="preloader">
+      <div class="load-label">折り紙 — folding</div>
+      <div class="count">0%</div>
+      <div class="bar"><span></span></div>
+    </div>
+
+    <canvas id="scene"></canvas>
+    <div class="vignette"></div>
+    <div id="progress"></div>
+
+    <header>
+      <div class="brand">KEVAN <span>SOON</span></div>
+      <div class="tag">Software Engineer · Singapore</div>
+    </header>
+
+    <nav id="chapter-nav" aria-label="Chapters"></nav>
+
+    <button id="sound" aria-label="Toggle sound" aria-pressed="false">
+      <span></span><span></span><span></span><span></span>
+    </button>
+
+    <main>
+      <section class="chapter chapter--hero" id="hero" data-title="Intro">
+        <div class="kanji" aria-hidden="true">折鶴</div>
+        <div class="stick">
+          <div class="copy copy--center">
+            <h1>Kevan Soon</h1>
+            <p class="hero-sub">Software Engineer · Singapore</p>
+          </div>
+          <div class="scroll-hint">Scroll to unfold</div>
+        </div>
+      </section>
+
+      <section class="chapter" id="about" data-title="About">
+        <div class="kanji" aria-hidden="true">自己</div>
+        <div class="stick">
+          <div class="copy">
+            <div class="label"><em>一</em> About</div>
+            <h2>Folding a path in software</h2>
+            <p>
+              Software engineering undergraduate at Singapore Management University, currently an
+              AI Engineer Intern at HTX and a citizen developer with the People's Association.
+            </p>
+            <div class="cols">
+              <div>
+                <h3>Education</h3>
+                <ul>
+                  <li>
+                    <span class="when">2024 – 2028</span>
+                    BSc Software Engineering, SMU<br /><small>2nd Major in Product Development</small>
+                  </li>
+                  <li>
+                    <span class="when">2019 – 2022</span>
+                    Dip. Business Information Systems, Republic Polytechnic<br /><small>Graduated with Merit</small>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h3>Experience</h3>
+                <ul>
+                  <li>
+                    <span class="when">2026 –</span>
+                    AI Engineer Intern, HTX<br /><small>Q Team</small>
+                  </li>
+                  <li>
+                    <span class="when">2025 –</span>
+                    Software Engineer, People's Association<br /><small>Building Churp, a garden booking system</small>
+                  </li>
+                  <li>
+                    <span class="when">2021</span>
+                    Application Developer Intern, XIOHOO<br /><small>Django Q&amp;A · Dialogflow Telegram bot</small>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="chapter chapter--right" id="skills" data-title="Craft">
+        <div class="kanji kanji--left" aria-hidden="true">技巧</div>
+        <div class="stick">
+          <div class="copy">
+            <div class="label"><em>二</em> Craft</div>
+            <h2>Tools of the trade</h2>
+            <div class="chips">
+              <span>Next.js</span><span>TypeScript</span><span>JavaScript</span><span>Python</span>
+              <span>FastAPI</span><span>Flask</span><span>Docker</span>
+            </div>
+            <div class="chips chips--dim">
+              <span>LangGraph</span><span>OpenAI</span><span>Gemini</span><span>Supabase</span>
+              <span>Spring Boot</span><span>YOLOv5</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="chapter" id="projects" data-title="Works">
+        <div class="kanji" aria-hidden="true">作品</div>
+        <div class="stick">
+          <div class="copy copy--wide">
+            <div class="label"><em>三</em> Works</div>
+            <h2>Selected works</h2>
+            <div class="works" data-lenis-prevent>
+              <article>
+                <h3>Churp</h3>
+                <p>Community garden allotment booking for the People's Association</p>
+                <div class="tags">Web · Community · In development</div>
+              </article>
+              <article>
+                <h3>SimiSlang</h3>
+                <p>RAG pipeline with LLM-as-a-judge evaluation</p>
+                <div class="tags">Next.js · LangGraph · DeepEval</div>
+              </article>
+              <article>
+                <h3>VoltPulse SG</h3>
+                <p>Retrieval-augmented generative AI</p>
+                <div class="tags">FastAPI · OpenAI · Supabase Vector</div>
+              </article>
+              <article>
+                <h3>Fairwork Contract</h3>
+                <p>Contract understanding with LLMs and OCR</p>
+                <div class="tags">Gemini · PaddleOCR · Next.js</div>
+              </article>
+              <article>
+                <h3>GreenMerlion</h3>
+                <p>Computer vision meets language models</p>
+                <div class="tags">YOLOv5 · Llama 2 · Flask</div>
+              </article>
+              <article>
+                <h3>AgeWellLah.AI</h3>
+                <p>Voice-enabled assistant on IRIS vector search</p>
+                <div class="tags">InterSystems IRIS · OpenAI · Web Speech API</div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="chapter chapter--right" id="honours" data-title="Honours">
+        <div class="kanji kanji--left" aria-hidden="true">栄誉</div>
+        <div class="stick">
+          <div class="copy">
+            <div class="label"><em>四</em> Honours</div>
+            <h2>Along the way</h2>
+            <ul class="honours">
+              <li><strong>Top 3 Winners</strong> AISG Student Hackathon 2021 · AI Singapore</li>
+              <li><strong>Sparks Community Fund</strong> Community Hackathon 2025 · OGP &amp; People's Association</li>
+              <li><strong>Top 8</strong> SMU Hack For Cities 2026 · SMU, IBM, IMDA, AI Singapore</li>
+              <li><strong>Top 10</strong> SMU Hack For Cities 2025 · SMU, IBM, IMDA, AI Singapore</li>
+              <li><strong>Top 20</strong> Google for Startups 2022 · Google Singapore</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="outro" id="contact" data-title="Contact">
+        <div class="kanji kanji--ghost" aria-hidden="true">縁</div>
+        <h2>Let's fold something new.</h2>
+        <div class="contact-links">
+          <a href="mailto:kevansoon@gmail.com">kevansoon@gmail.com</a>
+          <a href="https://github.com/KevanSoon" target="_blank" rel="noopener">github.com/KevanSoon</a>
+        </div>
+        <button id="replay" type="button">Fold again</button>
+        <p class="credits">
+          © 2026 Kevan Soon · Singapore<br />
+          Origami sequence — Nano Banana × Google Veo
+        </p>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

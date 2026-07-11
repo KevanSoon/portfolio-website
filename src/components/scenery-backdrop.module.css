@@ -1,0 +1,143 @@
+/* src/components/scenery-backdrop.module.css */
+
+.root { display: contents; }
+
+.scene,
+.foreground {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.scene { z-index: 0; }
+.foreground { z-index: 4; }
+
+/* ── Sky ── */
+.sky {
+  position: absolute;
+  inset: -2%;
+  background: linear-gradient(
+    180deg,
+    var(--sky-top) 0%,
+    var(--sky-mid) 36%,
+    var(--sky-low) 64%,
+    var(--sky-haze) 100%
+  );
+}
+
+.sun {
+  position: absolute;
+  top: -22%;
+  left: 50%;
+  width: 90vmax;
+  height: 90vmax;
+  margin-left: -45vmax;
+  background: radial-gradient(
+    circle at 50% 35%,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(255, 255, 255, 0.35) 32%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  will-change: transform;
+}
+
+/* ── Mountains ── */
+.mtnFar,
+.mtnMid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 128%;
+  will-change: transform;
+}
+.mtnFar { opacity: 0.7; }
+.mtnSvg { width: 100%; height: 100%; display: block; }
+
+/* ── Cloud sea (behind content, around the horizon) ── */
+.cloudFar,
+.cloudSea {
+  position: absolute;
+  left: -12%;
+  right: -12%;
+  will-change: transform;
+}
+.cloudFar { top: 30%; height: 34%; opacity: 0.55; }
+.cloudSea { top: 46%; height: 42%; opacity: 0.92; }
+
+.cloudFarInner,
+.cloudSeaInner {
+  position: absolute;
+  inset: 0;
+  filter: blur(6px);
+}
+.cloudFarInner {
+  background:
+    radial-gradient(48% 70% at 18% 90%, #fff 0%, rgba(255, 255, 255, 0) 72%),
+    radial-gradient(42% 62% at 50% 96%, #fff 0%, rgba(255, 255, 255, 0) 72%),
+    radial-gradient(50% 72% at 82% 88%, #fff 0%, rgba(255, 255, 255, 0) 72%);
+  animation: driftA 70s linear infinite;
+}
+.cloudSeaInner {
+  background:
+    radial-gradient(46% 80% at 12% 100%, #fff 0%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(40% 72% at 34% 100%, #fff 0%, rgba(255, 255, 255, 0) 72%),
+    radial-gradient(52% 86% at 58% 100%, #fff 0%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(44% 78% at 84% 100%, #fff 0%, rgba(255, 255, 255, 0) 72%);
+  filter: blur(10px);
+  animation: driftB 90s linear infinite;
+}
+
+/* ── Foreground transition wisps (in front of content) ── */
+.wispTop,
+.wispBottom {
+  position: absolute;
+  left: -15%;
+  right: -15%;
+  will-change: transform;
+}
+.wispTop { top: -6%; height: 30%; opacity: 0.5; }
+.wispBottom { bottom: -8%; height: 28%; opacity: 0.42; }
+
+.wispTopInner,
+.wispBottomInner {
+  position: absolute;
+  inset: 0;
+  filter: blur(14px);
+}
+.wispTopInner {
+  background:
+    radial-gradient(40% 60% at 26% 30%, #fff 0%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(34% 54% at 72% 18%, #fff 0%, rgba(255, 255, 255, 0) 72%);
+  animation: driftB 80s linear infinite;
+}
+.wispBottomInner {
+  background:
+    radial-gradient(46% 70% at 20% 80%, #fff 0%, rgba(255, 255, 255, 0) 70%),
+    radial-gradient(40% 62% at 78% 88%, #fff 0%, rgba(255, 255, 255, 0) 72%);
+  animation: driftA 100s linear infinite;
+}
+
+@keyframes driftA {
+  from { transform: translateX(-3%); }
+  50%  { transform: translateX(3%); }
+  to   { transform: translateX(-3%); }
+}
+@keyframes driftB {
+  from { transform: translateX(2.5%); }
+  50%  { transform: translateX(-2.5%); }
+  to   { transform: translateX(2.5%); }
+}
+
+@media (max-width: 768px) {
+  /* Lighter, calmer scene on phones */
+  .cloudFar { opacity: 0.4; }
+  .wispTop, .wispBottom { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cloudFarInner,
+  .cloudSeaInner,
+  .wispTopInner,
+  .wispBottomInner { animation: none; }
+}
