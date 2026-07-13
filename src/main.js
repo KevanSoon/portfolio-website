@@ -5,129 +5,45 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 gsap.registerPlugin(ScrollTrigger)
 
 // ------------------------------------------------------------------
-// Frame sequence — 48fps motion-interpolated, drawn with fractional
-// blending between adjacent frames and a sliding window of pre-decoded
-// ImageBitmaps so scrubbing never hits a synchronous decode.
+// Hero-only page. The lightning portrait is a single hardware-decoded
+// <video> whose currentTime is driven by scroll — no frame sequences,
+// no ImageBitmap churn. Memory stays in the tens of MB and the GPU only
+// ever holds one video texture, which is what the previous frame engine
+// could not guarantee (it faulted the GPU process with D3D11 texture
+// churn on some machines).
 // ------------------------------------------------------------------
-
-const FRAME_COUNT = 477 // must match the number of files in public/frames/d
-const srcFor = i => `/frames/d/frame_${String(i + 1).padStart(4, '0')}.webp`
-
-// chapter id → slice of the sequence it scrubs (fractions of the video)
-const BEATS = [
-  { id: 'hero', f: [0.0, 0.06] },
-  { id: 'about', f: [0.06, 0.3] },
-  { id: 'skills', f: [0.3, 0.52] },
-  { id: 'projects', f: [0.52, 0.78] },
-  { id: 'honours', f: [0.78, 1.0] },
-]
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-const smallScreen = window.matchMedia('(max-width: 820px)').matches
-const canvas = document.getElementById('scene')
-const ctx = canvas.getContext('2d')
-const images = new Array(FRAME_COUNT) // encoded frames, always resident
-const bitmaps = new Map() // frame index → pre-decoded ImageBitmap
-const pending = new Set()
-const DECODE_AHEAD = 28
-const DECODE_BEHIND = 10
-const EVICT_BEYOND = 60
+const video = document.getElementById('hero-video')
 
-let target = 0 // frame demanded by scroll position (float)
-let current = 0 // frame actually rendered (eased toward target, float)
-let lastKey = -1
+let duration = 0
+let targetT = 0 // currentTime demanded by scroll
+let curT = 0 // eased currentTime actually applied
+let lenis = null
 
-function ensureWindow(center) {
-  const c = Math.floor(center)
-  const lo = Math.max(0, c - DECODE_BEHIND)
-  const hi = Math.min(FRAME_COUNT - 1, c + DECODE_AHEAD)
-  for (let i = lo; i <= hi; i++) {
-    if (bitmaps.has(i) || pending.has(i)) continue
-    const img = images[i]
-    if (!img || !img.complete || !img.naturalWidth) continue
-    pending.add(i)
-    const p = smallScreen
-      ? createImageBitmap(img, { resizeWidth: 640, resizeHeight: 360, resizeQuality: 'high' })
-      : createImageBitmap(img)
-    p.then(bm => {
-      bitmaps.set(i, bm)
-      pending.delete(i)
-    }).catch(() => pending.delete(i))
-  }
-  for (const [i, bm] of bitmaps) {
-    if (i < c - EVICT_BEYOND || i > c + EVICT_BEYOND) {
-      bm.close()
-      bitmaps.delete(i)
-    }
-  }
-}
-
-function frameSource(i) {
-  const bm = bitmaps.get(i)
-  if (bm) return bm
-  const img = images[i]
-  return img && img.complete && img.naturalWidth ? img : null
-}
-
-function drawCover(img, alpha) {
-  const iw = img.width || img.naturalWidth
-  const ih = img.height || img.naturalHeight
-  const cw = canvas.width
-  const ch = canvas.height
-  const s = Math.max(cw / iw, ch / ih)
-  ctx.globalAlpha = alpha
-  ctx.drawImage(img, (cw - iw * s) / 2, (ch - ih * s) / 2, iw * s, ih * s)
-}
-
-function draw(f, force = false) {
-  f = Math.max(0, Math.min(FRAME_COUNT - 1, f))
-  const a = Math.floor(f)
-  const b = Math.min(a + 1, FRAME_COUNT - 1)
-  const frac = f - a
-  const key = a + Math.round(frac * 32) / 32 // quantize to skip imperceptible redraws
-  if (key === lastKey && !force) return
-  const srcA = frameSource(a)
-  if (!srcA) return
-  drawCover(srcA, 1)
-  if (b !== a && frac > 0.01) {
-    const srcB = frameSource(b)
-    if (srcB) drawCover(srcB, frac)
-  }
-  ctx.globalAlpha = 1
-  lastKey = key
-}
-
-function resize() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2)
-  canvas.width = Math.round(window.innerWidth * dpr)
-  canvas.height = Math.round(window.innerHeight * dpr)
-  draw(current, true)
-}
-
-function preload(onProgress) {
+function primeVideo() {
+  // a muted play→pause forces the browser to buffer so seeks are instant
   return new Promise(resolve => {
-    let loaded = 0
-    for (let i = 0; i < FRAME_COUNT; i++) {
-      const img = new Image()
-      const done = () => {
-        loaded += 1
-        onProgress(loaded / FRAME_COUNT)
-        if (i === 0) draw(0, true)
-        if (loaded === FRAME_COUNT) resolve()
-      }
-      img.onload = done
-      img.onerror = done
-      img.src = srcFor(i)
-      images[i] = img
+    const ready = () => (video.readyState >= 3 ? resolve() : null)
+    if (Number.isFinite(video.duration) && video.duration > 0) duration = video.duration
+    video.addEventListener('loadedmetadata', () => {
+      duration = video.duration || duration
+    })
+    video.addEventListener('canplaythrough', resolve, { once: true })
+    video.addEventListener('loadeddata', ready, { once: true })
+    video.muted = true
+    const p = video.play()
+    if (p && p.then) {
+      p.then(() => {
+        video.pause()
+        video.currentTime = 0
+        ready()
+      }).catch(() => ready())
     }
+    // safety: never hang the loader on a stubborn buffer
+    setTimeout(resolve, 4000)
   })
 }
-
-// ------------------------------------------------------------------
-// Scroll engine
-// ------------------------------------------------------------------
-
-let lenis
 
 function initScroll() {
   lenis = new Lenis({ smoothWheel: !reduceMotion })
@@ -135,160 +51,315 @@ function initScroll() {
   gsap.ticker.add(t => lenis.raf(t * 1000))
   gsap.ticker.lagSmoothing(0)
 
-  // scrub: each chapter drives its slice of the frame sequence
-  for (const { id, f } of BEATS) {
-    ScrollTrigger.create({
-      trigger: `#${id}`,
-      start: 'top top',
-      end: 'bottom top',
-      onUpdate: self => {
-        target = (f[0] + (f[1] - f[0]) * self.progress) * (FRAME_COUNT - 1)
-      },
-    })
-  }
-
-  // render loop — eased toward the scroll target, blended sub-frame
-  gsap.ticker.add(() => {
-    current += (target - current) * (reduceMotion ? 1 : 0.14)
-    if (Math.abs(target - current) < 0.001) current = target
-    ensureWindow(current)
-    draw(current)
-  })
-
-  // top progress hairline
-  const progressEl = document.getElementById('progress')
+  // video scrub finishes a little before the About panel starts covering,
+  // so the lightning fully ignites and settles before it's hidden
   ScrollTrigger.create({
-    start: 0,
-    end: () => ScrollTrigger.maxScroll(window),
+    trigger: '.hero-spacer',
+    start: 'top top',
+    end: '52% top',
     onUpdate: self => {
-      progressEl.style.transform = `scaleX(${self.progress})`
+      if (duration) targetT = self.progress * duration
     },
   })
 
-  // chapter copy: fade in, hold, fade out (hero only fades out)
-  document.querySelectorAll('.chapter').forEach(sec => {
-    const copy = sec.querySelector('.copy')
-    if (!copy) return
-    if (sec.id === 'hero') {
-      gsap.to(copy, {
-        opacity: 0,
-        y: -60,
-        ease: 'none',
-        scrollTrigger: { trigger: sec, start: 'top top', end: '45% top', scrub: true },
-      })
-      return
+  // ease currentTime toward the scroll target; skip while a seek is pending
+  gsap.ticker.add(() => {
+    if (!duration) return
+    curT += (targetT - curT) * (reduceMotion ? 1 : 0.12)
+    if (Math.abs(targetT - curT) < 0.004) curT = targetT
+    if (!video.seeking) {
+      try {
+        video.currentTime = curT
+      } catch (e) {
+        /* seek not ready yet */
+      }
     }
+  })
+
+  // fade the scroll hint out as soon as the user starts
+  gsap.to('.scroll-hint', {
+    opacity: 0,
+    ease: 'none',
+    scrollTrigger: { trigger: '.hero-spacer', start: 'top top', end: '6% top', scrub: true },
+  })
+
+  // word handoff, scroll-linked:
+  //   "designer" rises in → holds → rises up and out, while "<coder>" rises in
+  if (!reduceMotion) {
+    gsap.set(['.hero-text--left', '.hero-text--right'], { opacity: 0, y: 60 })
     gsap
-      .timeline({
-        scrollTrigger: { trigger: sec, start: 'top 70%', end: 'bottom 25%', scrub: true },
-      })
-      .fromTo(copy, { opacity: 0, y: 70 }, { opacity: 1, y: 0, ease: 'none', duration: 0.35 })
-      .to(copy, { opacity: 1, duration: 0.3 })
-      .to(copy, { opacity: 0, y: -70, ease: 'none', duration: 0.35 })
+      .timeline({ scrollTrigger: { trigger: '.hero-spacer', start: 'top top', end: '45% top', scrub: true } })
+      // designer in (0 → 1)
+      .to('.hero-text--left', { opacity: 1, y: 0, ease: 'none', duration: 1 }, 0)
+      // designer holds (1 → 2)
+      // designer out, up (2 → 3.2)  +  coder in (2 → 3.2)
+      .to('.hero-text--left', { opacity: 0, y: -70, ease: 'none', duration: 1.2 }, 2)
+      .fromTo(
+        '.hero-text--right',
+        { opacity: 0, y: 60 },
+        { opacity: 1, y: 0, ease: 'none', duration: 1.2 },
+        2
+      )
+    // coder holds from 3.2 → end
+  }
+
+  // reveal the About content as the panel slides up
+  gsap.from('.about-inner > *', {
+    opacity: 0,
+    y: 40,
+    ease: 'none',
+    stagger: 0.06,
+    scrollTrigger: { trigger: '.about', start: 'top 78%', end: 'top 32%', scrub: true },
   })
 
-  // chapter dots
-  const nav = document.getElementById('chapter-nav')
-  document.querySelectorAll('[data-title]').forEach(sec => {
-    const b = document.createElement('button')
-    b.type = 'button'
-    b.setAttribute('aria-label', sec.dataset.title)
-    b.innerHTML = `<span>${sec.dataset.title}</span>`
-    b.addEventListener('click', () => lenis.scrollTo(sec, { duration: 1.8 }))
-    nav.appendChild(b)
-    ScrollTrigger.create({
-      trigger: sec,
-      start: 'top 50%',
-      end: 'bottom 50%',
-      onToggle: self => b.classList.toggle('active', self.isActive),
-    })
-  })
+  // build + drive the rotating "Selected Work" gallery
+  initShowcase()
 
-  // ambient paper/koto audio (extracted from the source video), off by default
-  const audio = new Audio('/audio/fold.mp3')
-  audio.loop = true
-  audio.preload = 'auto'
-  const soundBtn = document.getElementById('sound')
-  soundBtn.addEventListener('click', () => {
-    const on = soundBtn.classList.toggle('on')
-    soundBtn.setAttribute('aria-pressed', String(on))
-    if (on) {
-      audio.volume = 0
-      audio.play().catch(() => {})
-      gsap.to(audio, { volume: 0.35, duration: 1.2 })
-    } else {
-      gsap.to(audio, { volume: 0, duration: 0.7, onComplete: () => audio.pause() })
+  if (import.meta.env.DEV) {
+    window.__hero = {
+      lenis,
+      ScrollTrigger,
+      tick: () => gsap.ticker.tick(),
+      state: () => ({ duration, targetT, curT, videoTime: video.currentTime, readyState: video.readyState }),
     }
-  })
-
-  document.getElementById('replay').addEventListener('click', () => lenis.scrollTo(0, { duration: 2.6 }))
+  }
 }
 
 // ------------------------------------------------------------------
-// Boot
+// Selected Work — vanilla port of the CircularGallery component.
+// Cards sit on a 3D ring (rotateY + translateZ); the ring's rotation is
+// driven by scroll through the section and gently auto-rotates when idle,
+// with each card's opacity following its angle from the front — the same
+// math as the original React component, without React/Tailwind/shadcn.
 // ------------------------------------------------------------------
 
-function splitLetters(el) {
-  const text = el.textContent
-  el.setAttribute('aria-label', text)
-  el.textContent = ''
-  const spans = []
-  for (const ch of text) {
-    const s = document.createElement('span')
-    s.className = 'ltr'
-    s.setAttribute('aria-hidden', 'true')
-    s.textContent = ch === ' ' ? ' ' : ch
-    el.appendChild(s)
-    spans.push(s)
+const PROJECTS = [
+  {
+    name: 'Churp',
+    cat: 'Web · Community',
+    desc: "Community garden allotment booking for the People's Association.",
+    stack: ['Next.js', 'FastAPI', 'Supabase'],
+    // branded "light" card — real logo + hero illustration pulled from churpsg.com
+    light: true,
+    bg: '#e9f1e6',
+    ink: '#14382b',
+    accent: '#3f7d5f',
+    logo: '/media/churp-logo.svg',
+    img: '/media/churp-hero.svg',
+    grad: 'linear-gradient(150deg, #2f9e6f, #12603f)',
+  },
+  {
+    name: 'SimiSlang',
+    cat: 'RAG · LLM-as-Judge',
+    desc: 'Singlish-slang lessons — flashcards & quizzes, AI- and moderator-verified — with LLM-as-a-judge evaluation.',
+    stack: ['Next.js', 'Spring Boot', 'LangGraph', 'DeepEval'],
+    // branded "light" card — Merlion wordmark (from the live site) + playful slang pills
+    light: true,
+    bg: '#eeedfb',
+    ink: '#3a3e59',
+    accent: '#7b7ef0',
+    img: '/media/simislang-logo.png',
+    slang: ['Rizz', 'Kilat', 'Sus', 'Hantu'],
+    hideName: true,
+    grad: 'linear-gradient(150deg, #5b53d6, #2e2880)',
+  },
+  {
+    name: 'VoltPulse SG',
+    cat: 'OCR · GenAI · Energy',
+    desc: 'Reads Singapore power bills with OCR to diagnose energy waste and unlock Climate Voucher savings.',
+    stack: ['Next.js', 'FastAPI', 'LangGraph', 'OpenAI Vision', 'Supabase'],
+    // dark "icon" card — app icon badge (dropped into media/)
+    icon: '/media/voltpulse.png',
+    grad: 'linear-gradient(155deg, #13564a, #0a2e3d)',
+  },
+  {
+    name: 'Fairwork Contract',
+    cat: 'LLM · OCR · Translation',
+    desc: "Turns scanned contracts & payslips into plain-language rights sheets in a worker's native language.",
+    stack: ['Next.js', 'Gemini', 'PaddleOCR'],
+    // branded "light" card — FairWork wordmark + the languages it translates
+    light: true,
+    bg: '#eef2fa',
+    ink: '#1e3557',
+    accent: '#0076d6',
+    img: '/media/fairwork-logo.png',
+    slang: ['English', '中文', 'Malay', 'Tamil', 'Hindi'],
+    hideName: true,
+    grad: 'linear-gradient(150deg, #1a9aa8, #0d5560)',
+  },
+  {
+    name: 'Waaah-Comics',
+    cat: 'Gesture · Generative AI',
+    desc: 'Gesture-controlled drawing and AI-powered comic generation.',
+    // feature tags for now — swap for the real stack when you have it
+    stack: ['Gesture Control', 'AI Image Gen', 'Comic Studio'],
+    // local screenshot (project isn't hosted) rather than a fetched URL
+    photo: '/media/wahcomics.png',
+    grad: 'linear-gradient(150deg, #a855f7, #ec4899, #f59e0b)',
+  },
+]
+
+function initShowcase() {
+  const gallery = document.getElementById('gallery')
+  if (!gallery) return
+
+  const RADIUS = 480
+  const anglePer = 360 / PROJECTS.length
+
+  const cards = PROJECTS.map((p, i) => {
+    const el = document.createElement('article')
+    el.style.transform = `rotateY(${i * anglePer}deg) translateZ(${RADIUS}px)`
+    const chips = p.stack.map(s => `<span>${s}</span>`).join('')
+    if (p.light) {
+      // branded card over a light background — logo / illustration / slang pills
+      el.className = 'g-card g-card--light'
+      el.style.background = p.bg
+      if (p.ink) el.style.setProperty('--card-ink', p.ink)
+      if (p.accent) el.style.setProperty('--card-accent', p.accent)
+      let html = ''
+      if (p.logo) html += `<img class="g-logo" src="${p.logo}" alt="${p.name} logo" />`
+      if (p.img) html += `<img class="g-illus" src="${p.img}" alt="${p.name}" />`
+      if (p.slang) html += `<div class="g-slang">${p.slang.map(s => `<span>${s}</span>`).join('')}</div>`
+      html += `<div class="g-body"><div class="g-cat">${p.cat}</div>`
+      if (!p.hideName) html += `<h3 class="g-name">${p.name}</h3>`
+      html += `<p class="g-desc">${p.desc}</p><div class="g-stack">${chips}</div></div>`
+      el.innerHTML = html
+    } else if (p.photo) {
+      // dark "photo" card: local screenshot thumbnail on top, info below
+      el.className = 'g-card g-card--photo'
+      el.innerHTML =
+        `<div class="g-photo-wrap"><img class="g-photo" src="${p.photo}" alt="${p.name}" /></div>` +
+        `<div class="g-body">` +
+        `<div class="g-cat">${p.cat}</div>` +
+        `<h3 class="g-name">${p.name}</h3>` +
+        `<p class="g-desc">${p.desc}</p>` +
+        `<div class="g-stack">${chips}</div>` +
+        `</div>`
+    } else if (p.icon) {
+      // dark "icon" card: app-icon badge on a themed gradient + info
+      el.className = 'g-card g-card--icon'
+      el.style.background = p.grad
+      el.innerHTML =
+        `<div class="g-icon-head">` +
+        `<img class="g-icon" src="${p.icon}" alt="${p.name} icon" />` +
+        `<div class="g-cat">${p.cat}</div>` +
+        `</div>` +
+        `<div class="g-body">` +
+        `<h3 class="g-name">${p.name}</h3>` +
+        `<p class="g-desc">${p.desc}</p>` +
+        `<div class="g-stack">${chips}</div>` +
+        `</div>`
+    } else {
+      el.className = 'g-card'
+      el.style.background = p.grad
+      el.innerHTML =
+        `<div class="g-cat">${p.cat}</div>` +
+        `<div class="g-body">` +
+        `<h3 class="g-name">${p.name}</h3>` +
+        `<p class="g-desc">${p.desc}</p>` +
+        `<div class="g-stack">${chips}</div>` +
+        `</div>`
+    }
+    gallery.appendChild(el)
+    return { el, angle: i * anglePer }
+  })
+
+  let scale = 1
+  const setScale = () => {
+    scale = Math.max(0.55, Math.min(window.innerWidth / 1250, 1))
   }
-  return spans
+  setScale()
+  window.addEventListener('resize', setScale)
+  gallery.style.transform = `scale3d(${scale}, ${scale}, ${scale}) rotateY(0deg)`
+
+  let scrollRot = 0
+  let autoRot = 0
+  let isScrolling = false
+  let inView = false
+  let idleTimer = null
+
+  // scroll through the section rotates the ring one full turn
+  ScrollTrigger.create({
+    trigger: '.showcase',
+    start: 'top top',
+    end: 'bottom bottom',
+    onUpdate: self => {
+      scrollRot = self.progress * 360
+      isScrolling = true
+      if (idleTimer) clearTimeout(idleTimer)
+      idleTimer = setTimeout(() => {
+        isScrolling = false
+      }, 160)
+    },
+  })
+
+  // only run the render loop while the section is on screen
+  ScrollTrigger.create({
+    trigger: '.showcase',
+    start: 'top bottom',
+    end: 'bottom top',
+    onToggle: self => {
+      inView = self.isActive
+    },
+  })
+
+  gsap.ticker.add(() => {
+    if (!inView) return
+    if (!isScrolling && !reduceMotion) autoRot += 0.04
+    const rot = scrollRot + autoRot
+    gallery.style.transform = `scale3d(${scale}, ${scale}, ${scale}) rotateY(${rot}deg)`
+    for (const c of cards) {
+      const rel = (((c.angle + rot) % 360) + 360) % 360
+      const norm = rel > 180 ? 360 - rel : rel
+      c.el.style.opacity = String(Math.max(0.25, 1 - norm / 180))
+    }
+  })
 }
 
 async function boot() {
   history.scrollRestoration = 'manual'
   window.scrollTo(0, 0)
-  resize()
-  window.addEventListener('resize', resize)
 
   const count = document.querySelector('#preloader .count')
   const bar = document.querySelector('#preloader .bar span')
-  await preload(p => {
-    count.textContent = `${Math.round(p * 100)}%`
-    bar.style.transform = `scaleX(${p})`
-  })
+  // there is only one asset to wait for; animate a short determinate-ish fill
+  let pct = 0
+  const fill = setInterval(() => {
+    pct = Math.min(pct + Math.random() * 18, 92)
+    count.textContent = `${Math.round(pct)}%`
+    bar.style.transform = `scaleX(${pct / 100})`
+  }, 120)
 
-  resize() // re-measure in case the viewport was zero-sized during initial load
-  ensureWindow(0)
+  await primeVideo()
+  clearInterval(fill)
+  count.textContent = '100%'
+  bar.style.transform = 'scaleX(1)'
+
   initScroll()
 
-  if (import.meta.env.DEV) {
-    window.__crane = {
-      ScrollTrigger,
-      tick: () => gsap.ticker.tick(),
-      state: () => ({ target, current, lastKey, decoded: bitmaps.size }),
-    }
-  }
-
   const preloader = document.getElementById('preloader')
-  const letters = splitLetters(document.querySelector('#hero h1'))
   const intro = gsap.timeline()
   intro.to(preloader, {
     opacity: 0,
-    duration: 0.7,
+    duration: 0.6,
     ease: 'power2.out',
     onComplete: () => {
       preloader.remove()
       document.body.classList.remove('loading')
+      // the page was measured while body.loading disabled scrolling; now that
+      // the full height (incl. the showcase) is scrollable, re-measure
+      lenis.resize()
+      ScrollTrigger.refresh()
     },
   })
   if (!reduceMotion) {
-    intro
-      .from(letters, { opacity: 0, y: 26, stagger: 0.05, duration: 0.8, ease: 'power3.out' }, '-=0.25')
-      .from(
-        ['.hero-sub', '.scroll-hint', 'header', '#chapter-nav', '#sound'],
-        { opacity: 0, duration: 0.9 },
-        '-=0.4'
-      )
+    // the split headline is revealed on scroll (see initScroll); on load we
+    // only bring in the face and chrome so there is a reason to scroll
+    intro.from(
+      ['.hero-face', 'header', '.scroll-hint'],
+      { opacity: 0, y: 20, duration: 0.8, stagger: 0.1, ease: 'power3.out' },
+      '-=0.3'
+    )
   }
 }
 
