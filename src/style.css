@@ -408,6 +408,103 @@ header {
 }
 
 /* ---------------------------------------------------------------- */
+/* Skillset — grouped tech stack with colored brand icons           */
+/* ---------------------------------------------------------------- */
+
+.skills {
+  position: relative;
+  z-index: 2; /* above the fixed hero, like .about */
+  background: #ffffff;
+  color: var(--ink);
+  padding: clamp(4rem, 12vh, 8rem) clamp(1.5rem, 8vw, 8rem);
+}
+
+.skills-inner {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.skills .about-label {
+  margin-bottom: 1.3rem;
+}
+
+.skills h2 {
+  font-weight: 200;
+  font-size: clamp(1.8rem, 4vw, 3.1rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin-bottom: 2.6rem;
+}
+
+.skills-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.9rem;
+}
+
+.skill-group {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 1.3rem;
+  align-items: start;
+}
+
+.skill-group-label {
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--dim);
+  padding-top: 0.55rem;
+}
+
+.skill-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem 0.5rem 0.62rem;
+  border: 1px solid rgba(22, 21, 15, 0.13);
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--ink);
+  background: #fff;
+  transition: border-color 0.25s, transform 0.25s, box-shadow 0.25s;
+}
+
+.skill-chip:hover {
+  border-color: rgba(224, 64, 42, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+}
+
+.skill-ico {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.skill-mono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: var(--ink);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- */
 /* Selected Work — rotating 3D project gallery                       */
 /* ---------------------------------------------------------------- */
 
@@ -769,6 +866,11 @@ header {
 
   .showcase-head {
     top: 4.5rem;
+  }
+
+  .skill-group {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
   }
 }
 

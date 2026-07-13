@@ -112,6 +112,9 @@ function initScroll() {
     scrollTrigger: { trigger: '.about', start: 'top 78%', end: 'top 32%', scrub: true },
   })
 
+  // build the grouped skills grid
+  initSkills()
+
   // build + drive the rotating "Selected Work" gallery
   initShowcase()
 
@@ -316,6 +319,80 @@ function initShowcase() {
   })
 }
 
+// ------------------------------------------------------------------
+// Skillset — grouped tech stack. `i` = colored brand icon in
+// public/media/icons/<i>.svg; `m` = monogram badge for tools with no
+// official logo (swap in a real icon later if one is provided).
+// ------------------------------------------------------------------
+
+const SKILLS = [
+  {
+    group: 'Languages',
+    items: [{ n: 'Python', i: 'python' }, { n: 'TypeScript', i: 'typescript' }, { n: 'JavaScript', i: 'javascript' }],
+  },
+  {
+    group: 'Frontend',
+    items: [{ n: 'Next.js', i: 'nextjs' }, { n: 'React', i: 'react' }, { n: 'Tailwind CSS', i: 'tailwindcss' }],
+  },
+  {
+    group: 'Backend',
+    items: [{ n: 'FastAPI', i: 'fastapi' }, { n: 'Flask', i: 'flask' }, { n: 'Spring Boot', i: 'spring' }],
+  },
+  {
+    group: 'AI / ML',
+    items: [
+      { n: 'LangChain', i: 'langchain' },
+      { n: 'LangGraph', m: 'LG' },
+      { n: 'OpenAI', i: 'openai' },
+      { n: 'Gemini', i: 'gemini' },
+      { n: 'Ollama', i: 'ollama' },
+      { n: 'YOLOv5', i: 'yolov5' },
+      { n: 'DeepEval', m: 'DE' },
+    ],
+  },
+  {
+    group: 'Data',
+    items: [
+      { n: 'Supabase', i: 'supabase' },
+      { n: 'PostgreSQL', i: 'postgresql' },
+      { n: 'MySQL', i: 'mysql' },
+      { n: 'InterSystems IRIS', m: 'IS' },
+    ],
+  },
+  {
+    group: 'Tools',
+    items: [{ n: 'Docker', i: 'docker' }, { n: 'Git', i: 'git' }, { n: 'Vercel', i: 'vercel' }, { n: 'ngrok', i: 'ngrok' }],
+  },
+]
+
+function initSkills() {
+  const grid = document.getElementById('skills-grid')
+  if (!grid) return
+  for (const g of SKILLS) {
+    const row = document.createElement('div')
+    row.className = 'skill-group'
+    const chips = g.items
+      .map(it => {
+        const visual = it.i
+          ? `<img class="skill-ico" src="/media/icons/${it.i}.svg" alt="" />`
+          : `<span class="skill-mono">${it.m || it.n.slice(0, 2).toUpperCase()}</span>`
+        return `<span class="skill-chip">${visual}${it.n}</span>`
+      })
+      .join('')
+    row.innerHTML = `<div class="skill-group-label">${g.group}</div><div class="skill-chips">${chips}</div>`
+    grid.appendChild(row)
+  }
+
+  // reveal the groups as the section scrolls into view
+  gsap.from('.skill-group', {
+    opacity: 0,
+    y: 40,
+    ease: 'none',
+    stagger: 0.08,
+    scrollTrigger: { trigger: '.skills', start: 'top 78%', end: 'top 38%', scrub: true },
+  })
+}
+
 async function boot() {
   history.scrollRestoration = 'manual'
   window.scrollTo(0, 0)
@@ -336,6 +413,15 @@ async function boot() {
   bar.style.transform = 'scaleX(1)'
 
   initScroll()
+
+  // web fonts swap in after first paint and reflow the page taller; re-measure
+  // so Lenis's scroll limit stays correct and lower sections stay reachable
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => {
+      if (lenis) lenis.resize()
+      ScrollTrigger.refresh()
+    })
+  }
 
   const preloader = document.getElementById('preloader')
   const intro = gsap.timeline()
