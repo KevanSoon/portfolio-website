@@ -800,6 +800,136 @@ header {
 }
 
 /* ---------------------------------------------------------------- */
+/* Achievements — rotating conic-gradient glow around each photo     */
+/* ---------------------------------------------------------------- */
+
+.achievements {
+  position: relative;
+  z-index: 2; /* above the fixed hero, like the other content sections */
+  background: #ffffff;
+  color: var(--ink);
+  padding: clamp(4rem, 12vh, 8rem) clamp(1.5rem, 8vw, 8rem) clamp(6rem, 14vh, 10rem);
+}
+
+.ach-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.achievements .about-label {
+  margin-bottom: 1.3rem;
+}
+
+.achievements > .ach-inner > h2 {
+  font-weight: 200;
+  font-size: clamp(1.8rem, 4vw, 3.1rem);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  margin-bottom: clamp(3rem, 8vh, 5rem);
+}
+
+.ach-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(2rem, 6vw, 5rem);
+  align-items: center;
+  margin-bottom: clamp(4rem, 10vh, 7rem);
+}
+
+.ach-row:last-child {
+  margin-bottom: 0;
+}
+
+.ach-row--rev .ach-visual {
+  order: 2;
+}
+
+.ach-row--rev .ach-text {
+  order: 1;
+}
+
+.ach-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ach-media {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+}
+
+.ach-glow {
+  position: absolute;
+  inset: -13%;
+  z-index: 0;
+  border-radius: 34px;
+  filter: blur(46px);
+  opacity: 0.8;
+  background: conic-gradient(
+    from 0deg,
+    #34d399,
+    #22d3ee,
+    #3b82f6,
+    #7c3aed,
+    #ef4444,
+    #34d399
+  );
+}
+
+.ach-frame {
+  position: relative;
+  z-index: 1;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.26);
+  background: #0b0b0f;
+}
+
+.ach-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.ach-result {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--shu);
+  border: 1px solid rgba(224, 64, 42, 0.4);
+  border-radius: 999px;
+  padding: 0.35rem 0.85rem;
+  margin-bottom: 1.15rem;
+}
+
+.ach-title {
+  font-weight: 300;
+  font-size: clamp(1.4rem, 2.6vw, 2.1rem);
+  letter-spacing: -0.01em;
+  margin-bottom: 0.8rem;
+}
+
+.ach-desc {
+  font-weight: 300;
+  font-size: clamp(0.9rem, 1.1vw, 1rem);
+  line-height: 1.75;
+  color: var(--dim);
+  max-width: 42ch;
+  margin-bottom: 1.2rem;
+}
+
+.ach-org {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+}
+
+/* ---------------------------------------------------------------- */
 /* Mobile                                                            */
 /* ---------------------------------------------------------------- */
 
@@ -871,6 +1001,22 @@ header {
   .skill-group {
     grid-template-columns: 1fr;
     gap: 0.6rem;
+  }
+
+  .ach-row,
+  .ach-row--rev {
+    grid-template-columns: 1fr;
+    gap: 1.6rem;
+  }
+
+  .ach-row--rev .ach-visual,
+  .ach-row--rev .ach-text {
+    order: 0; /* stacked: image on top, text below */
+  }
+
+  .ach-media {
+    max-width: 380px;
+    margin: 0 auto;
   }
 }
 

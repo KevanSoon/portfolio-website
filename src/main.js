@@ -118,6 +118,9 @@ function initScroll() {
   // build + drive the rotating "Selected Work" gallery
   initShowcase()
 
+  // build the Achievements rows (rotating-gradient port)
+  initAchievements()
+
   if (import.meta.env.DEV) {
     window.__hero = {
       lenis,
@@ -269,7 +272,17 @@ function initShowcase() {
 
   let scale = 1
   const setScale = () => {
-    scale = Math.max(0.55, Math.min(window.innerWidth / 1250, 1))
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+    if (vw >= 1100) {
+      scale = Math.min(vw / 1250, 1) // desktop — unchanged
+    } else {
+      // phones & tablets: fill much more of the (narrower) screen. Bounded by
+      // width and by height so the card still clears the heading. The /482 and
+      // /900 divisors bake in the ~1.35x perspective magnification of the
+      // front-facing card, so it never overflows.
+      scale = Math.max(0.7, Math.min(vw / 482, vh / 900, 1.2))
+    }
   }
   setScale()
   window.addEventListener('resize', setScale)
@@ -390,6 +403,94 @@ function initSkills() {
     ease: 'none',
     stagger: 0.08,
     scrollTrigger: { trigger: '.skills', start: 'top 78%', end: 'top 38%', scrub: true },
+  })
+}
+
+// ------------------------------------------------------------------
+// Achievements — vanilla port of the RotatingGradientRight component.
+// Each row: a photo framed inside a rotating conic-gradient glow, with
+// text beside it. Odd rows (2nd, 4th) flip sides. The glow only spins
+// while the section is on screen (heavy blurred compositing otherwise).
+// ------------------------------------------------------------------
+
+const ACHIEVEMENTS = [
+  {
+    title: 'SMU Hack for Cities 2026',
+    result: 'Top 8 Finalist',
+    org: 'SMU · IBM · IMDA · AI Singapore',
+    desc: 'Pitched VoltPulse SG, an agentic AI home-energy advisor, through to the finals.',
+    img: '/media/hfc_2026.jpg',
+  },
+  {
+    title: 'Build for Good 2025',
+    result: 'Sparks Community Fund',
+    org: "Open Government Products · People's Association",
+    desc: 'Recognised with the Sparks Community Fund for a community-impact build.',
+    img: '/media/bfg_2025.jpg',
+  },
+  {
+    title: 'SMU Hack for Cities 2025',
+    result: 'Top 10',
+    org: 'SMU · IBM · IMDA · AI Singapore',
+    desc: 'Reached the top 10 at the 2025 edition of the civic-tech hackathon.',
+    img: '/media/hfc_2025.jpg',
+  },
+  {
+    title: 'AISG Student Hackathon',
+    result: 'Top 3 Winners',
+    org: 'AI Singapore',
+    desc: 'Placed among the top 3 teams nationally at the AI Singapore student hackathon.',
+    img: '/media/ai_singapore.png',
+  },
+]
+
+// coalesce layout-changing events into a single Lenis/ScrollTrigger re-measure
+let refreshTimer = null
+function refreshScroll() {
+  if (refreshTimer) return
+  refreshTimer = setTimeout(() => {
+    refreshTimer = null
+    if (lenis) lenis.resize()
+    ScrollTrigger.refresh()
+  }, 200)
+}
+
+function initAchievements() {
+  const list = document.getElementById('ach-list')
+  if (!list) return
+
+  ACHIEVEMENTS.forEach((a, i) => {
+    const row = document.createElement('div')
+    row.className = 'ach-row' + (i % 2 === 1 ? ' ach-row--rev' : '')
+    row.innerHTML =
+      `<div class="ach-visual"><div class="ach-media">` +
+      `<div class="ach-glow"></div>` +
+      `<div class="ach-frame"><img src="${a.img}" alt="${a.title}" /></div>` +
+      `</div></div>` +
+      `<div class="ach-text">` +
+      `<div class="ach-result">${a.result}</div>` +
+      `<h3 class="ach-title">${a.title}</h3>` +
+      `<p class="ach-desc">${a.desc}</p>` +
+      `<div class="ach-org">${a.org}</div>` +
+      `</div>`
+    list.appendChild(row)
+  })
+
+  // these photos are height:auto — they grow the page as they load, which
+  // would leave Lenis's scroll limit stale; re-measure once each lands
+  list.querySelectorAll('.ach-frame img').forEach(im => {
+    if (im.complete) refreshScroll()
+    else im.addEventListener('load', refreshScroll, { once: true })
+  })
+
+  // reveal each row as it scrolls into view
+  document.querySelectorAll('.ach-row').forEach(row => {
+    gsap.from(row, {
+      opacity: 0,
+      y: 50,
+      ease: 'none',
+      scrollTrigger: { trigger: row, start: 'top 82%', end: 'top 48%', scrub: true },
+    })
   })
 }
 
