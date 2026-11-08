@@ -6,7 +6,7 @@ gsap.registerPlugin(ScrollTrigger)
 
 // ------------------------------------------------------------------
 // Hero-only page. The lightning portrait is a single hardware-decoded
-// <video> whose currentTime is driven by scroll — no frame sequences,
+// <video> whose currentTime is driven by scroll, with no frame sequences,
 // no ImageBitmap churn. Memory stays in the tens of MB and the GPU only
 // ever holds one video texture, which is what the previous frame engine
 // could not guarantee (it faulted the GPU process with D3D11 texture
@@ -132,208 +132,167 @@ function initScroll() {
 }
 
 // ------------------------------------------------------------------
-// Selected Work — vanilla port of the CircularGallery component.
-// Cards sit on a 3D ring (rotateY + translateZ); the ring's rotation is
-// driven by scroll through the section and gently auto-rotates when idle,
-// with each card's opacity following its angle from the front — the same
-// math as the original React component, without React/Tailwind/shadcn.
+// Selected Work: vanilla port of the ProjectShowcase component.
+// Screenshots sit in a tilted card stack; Previous/Next hops the chosen
+// card to the front while its text blurs in word by word, the same
+// choreography as the original, driven by GSAP instead of Framer Motion.
+// Every text panel shares one grid cell, so the section is always as tall
+// as the longest project and switching never shifts the page below it.
 // ------------------------------------------------------------------
 
 const PROJECTS = [
   {
     name: 'Churp',
-    cat: 'Web · Community',
-    desc: "Community garden allotment booking for the People's Association.",
-    stack: ['Next.js', 'FastAPI', 'Supabase'],
-    // branded "light" card — real logo + hero illustration pulled from churpsg.com
-    light: true,
-    bg: '#e9f1e6',
-    ink: '#14382b',
-    accent: '#3f7d5f',
-    logo: '/media/churp-logo.svg',
-    img: '/media/churp-hero.svg',
-    grad: 'linear-gradient(150deg, #2f9e6f, #12603f)',
+    img: '/media/work/churp.webp',
+    desc: "A fair ballot for Tengah residents to apply for community allotment garden plots, built with the People's Association. The Singpass API pre-fills each application, making it quick for residents to enter the ballot.",
+    stack: ['Singpass API'],
   },
   {
     name: 'SimiSlang',
-    cat: 'RAG · LLM-as-Judge',
-    desc: 'Singlish-slang lessons — flashcards & quizzes, AI- and moderator-verified — with LLM-as-a-judge evaluation.',
-    stack: ['Next.js', 'Spring Boot', 'LangGraph', 'DeepEval'],
-    // branded "light" card — Merlion wordmark (from the live site) + playful slang pills
-    light: true,
-    bg: '#eeedfb',
-    ink: '#3a3e59',
-    accent: '#7b7ef0',
-    img: '/media/simislang-logo.png',
-    slang: ['Rizz', 'Kilat', 'Sus', 'Hantu'],
-    hideName: true,
-    grad: 'linear-gradient(150deg, #5b53d6, #2e2880)',
+    img: '/media/work/simislang.webp',
+    desc: 'Singlish slang lessons written by vetted admins and verified by moderators and AI. Its AI layer combines semantic and keyword search using Reciprocal Rank Fusion over Gemma embeddings in PGVector, orchestrated with LangGraph and evaluated with G-Eval.',
+    stack: ['Next.js', 'Spring Boot', 'MySQL', 'PostgreSQL', 'PGVector', 'FastAPI', 'LangGraph', 'Gemma Embeddings', 'RRF', 'Semantic Search', 'Keyword Search', 'G-Eval'],
   },
   {
-    name: 'VoltPulse SG',
-    cat: 'OCR · GenAI · Energy',
-    desc: 'Reads Singapore power bills with OCR to diagnose energy waste and unlock Climate Voucher savings.',
-    stack: ['Next.js', 'FastAPI', 'LangGraph', 'OpenAI Vision', 'Supabase'],
-    // dark "icon" card — app icon badge (dropped into media/)
-    icon: '/media/voltpulse.png',
-    grad: 'linear-gradient(155deg, #13564a, #0a2e3d)',
+    name: 'Scrooge McDuck Bank',
+    img: '/media/work/scrooge.webp',
+    pos: 'center', // keeps the tagline at the bottom of the screenshot in frame
+    desc: 'A banking CRM deployed across two availability zones in private subnets. Route 53 and WAF front load-balanced ECS services that auto-scale against Aurora and ElastiCache replicas, with Lambda and an outbox worker handling background processing. PrivateLink keeps Secrets Manager, KMS, Cognito, SNS and SQS traffic private, and each domain has its own database credentials.',
+    stack: ['Route 53', 'WAF', 'ALB', 'ECS Auto Scaling', 'Aurora', 'ElastiCache', 'Lambda', 'SQS', 'SNS', 'Cognito', 'PrivateLink', 'Secrets Manager', 'KMS', 'Bedrock AgentCore', 'GuardDuty'],
   },
   {
-    name: 'Fairwork Contract',
-    cat: 'LLM · OCR · Translation',
-    desc: "Turns scanned contracts & payslips into plain-language rights sheets in a worker's native language.",
-    stack: ['Next.js', 'Gemini', 'PaddleOCR'],
-    // branded "light" card — FairWork wordmark + the languages it translates
-    light: true,
-    bg: '#eef2fa',
-    ink: '#1e3557',
-    accent: '#0076d6',
-    img: '/media/fairwork-logo.png',
-    slang: ['English', '中文', 'Malay', 'Tamil', 'Hindi'],
-    hideName: true,
-    grad: 'linear-gradient(150deg, #1a9aa8, #0d5560)',
+    name: 'OptESim',
+    img: '/media/work/optesim.webp',
+    desc: 'A 3D port-operations workspace for replanning when disruptions suddenly hit. Mark a quay crane or AGV as degraded or unavailable and a LangGraph ReAct agent drafts a new operating plan, then moves it through validation checks, human approval and an audit trail, visualised live in Three.js.',
+    stack: ['Next.js', 'FastAPI', 'Node.js', 'LangGraph (ReAct)', 'OpenAI', 'Three.js'],
   },
   {
-    name: 'Waaah-Comics',
-    cat: 'Gesture · Generative AI',
-    desc: 'Gesture-controlled drawing and AI-powered comic generation.',
-    // feature tags for now — swap for the real stack when you have it
-    stack: ['Gesture Control', 'AI Image Gen', 'Comic Studio'],
-    // local screenshot (project isn't hosted) rather than a fetched URL
-    photo: '/media/wahcomics.png',
-    grad: 'linear-gradient(150deg, #a855f7, #ec4899, #f59e0b)',
+    name: 'VoltPulse',
+    img: '/media/work/voltpulse.webp',
+    desc: 'Turns Singapore utility bills into a dashboard comparing your usage with neighbours and the national average, with an AI chat for personalised advice. Runs LangChain on FastAPI, with GPT-OSS 120B through Ollama Cloud.',
+    stack: ['Next.js', 'FastAPI', 'LangChain', 'Ollama Cloud', 'GPT-OSS 120B'],
   },
 ]
 
 function initShowcase() {
-  const gallery = document.getElementById('gallery')
-  if (!gallery) return
+  const root = document.getElementById('project-showcase')
+  if (!root) return
 
-  const RADIUS = 480
-  const anglePer = 360 / PROJECTS.length
+  const stack = root.querySelector('.ps-stack')
+  const texts = root.querySelector('.ps-texts')
+  const total = PROJECTS.length
+  const HOP = 0.2 // seconds for each half of the card's rise and landing
+  const tilt = () => gsap.utils.random(-10, 10, 1)
 
-  const cards = PROJECTS.map((p, i) => {
-    const el = document.createElement('article')
-    el.style.transform = `rotateY(${i * anglePer}deg) translateZ(${RADIUS}px)`
+  const cards = PROJECTS.map(p => {
+    const card = document.createElement('div')
+    card.className = 'ps-card'
+    card.innerHTML = `<img src="${p.img}" alt="${p.name} screenshot" loading="lazy" decoding="async" />`
+    if (p.pos) card.firstChild.style.objectPosition = p.pos
+    stack.appendChild(card)
+    return card
+  })
+
+  const panels = PROJECTS.map(p => {
+    const panel = document.createElement('div')
+    panel.className = 'ps-panel'
+    const words = p.desc.split(' ').map(w => `<span class="ps-word">${w}</span>`).join(' ')
     const chips = p.stack.map(s => `<span>${s}</span>`).join('')
-    if (p.light) {
-      // branded card over a light background — logo / illustration / slang pills
-      el.className = 'g-card g-card--light'
-      el.style.background = p.bg
-      if (p.ink) el.style.setProperty('--card-ink', p.ink)
-      if (p.accent) el.style.setProperty('--card-accent', p.accent)
-      let html = ''
-      if (p.logo) html += `<img class="g-logo" src="${p.logo}" alt="${p.name} logo" />`
-      if (p.img) html += `<img class="g-illus" src="${p.img}" alt="${p.name}" />`
-      if (p.slang) html += `<div class="g-slang">${p.slang.map(s => `<span>${s}</span>`).join('')}</div>`
-      html += `<div class="g-body"><div class="g-cat">${p.cat}</div>`
-      if (!p.hideName) html += `<h3 class="g-name">${p.name}</h3>`
-      html += `<p class="g-desc">${p.desc}</p><div class="g-stack">${chips}</div></div>`
-      el.innerHTML = html
-    } else if (p.photo) {
-      // dark "photo" card: local screenshot thumbnail on top, info below
-      el.className = 'g-card g-card--photo'
-      el.innerHTML =
-        `<div class="g-photo-wrap"><img class="g-photo" src="${p.photo}" alt="${p.name}" /></div>` +
-        `<div class="g-body">` +
-        `<div class="g-cat">${p.cat}</div>` +
-        `<h3 class="g-name">${p.name}</h3>` +
-        `<p class="g-desc">${p.desc}</p>` +
-        `<div class="g-stack">${chips}</div>` +
-        `</div>`
-    } else if (p.icon) {
-      // dark "icon" card: app-icon badge on a themed gradient + info
-      el.className = 'g-card g-card--icon'
-      el.style.background = p.grad
-      el.innerHTML =
-        `<div class="g-icon-head">` +
-        `<img class="g-icon" src="${p.icon}" alt="${p.name} icon" />` +
-        `<div class="g-cat">${p.cat}</div>` +
-        `</div>` +
-        `<div class="g-body">` +
-        `<h3 class="g-name">${p.name}</h3>` +
-        `<p class="g-desc">${p.desc}</p>` +
-        `<div class="g-stack">${chips}</div>` +
-        `</div>`
-    } else {
-      el.className = 'g-card'
-      el.style.background = p.grad
-      el.innerHTML =
-        `<div class="g-cat">${p.cat}</div>` +
-        `<div class="g-body">` +
-        `<h3 class="g-name">${p.name}</h3>` +
-        `<p class="g-desc">${p.desc}</p>` +
-        `<div class="g-stack">${chips}</div>` +
-        `</div>`
-    }
-    gallery.appendChild(el)
-    return { el, angle: i * anglePer }
+    panel.innerHTML =
+      `<h3 class="ps-name">${p.name}</h3>` +
+      `<p class="ps-desc">${words}</p>` +
+      `<div class="ps-chips">${chips}</div>`
+    texts.appendChild(panel)
+    return { panel, words: panel.querySelectorAll('.ps-word') }
   })
 
-  let scale = 1
-  const setScale = () => {
-    const vw = window.innerWidth
-    const vh = window.innerHeight
-    if (vw >= 1100) {
-      scale = Math.min(vw / 1250, 1) // desktop — unchanged
-    } else {
-      // phones & tablets: fill much more of the (narrower) screen. Bounded by
-      // width and by height so the card still clears the heading. The /482 and
-      // /900 divisors bake in the ~1.35x perspective magnification of the
-      // front-facing card, so it never overflows.
-      scale = Math.max(0.7, Math.min(vw / 482, vh / 900, 1.2))
-    }
+  const placeCards = (active, animate) => {
+    cards.forEach((card, i) => {
+      const on = i === active
+      const zIndex = on ? 999 : total + 2 - i
+      const pose = { opacity: on ? 1 : 0.7, scale: on ? 1 : 0.95, rotation: on ? 0 : tilt() }
+      card.setAttribute('aria-hidden', String(!on))
+      gsap.killTweensOf(card)
+      if (!animate) {
+        gsap.set(card, { ...pose, zIndex, y: 0 })
+        return
+      }
+      gsap.to(card, { ...pose, duration: HOP * 2, ease: 'power1.inOut' })
+      // restack at the top of the hop, so the card lands on the pile
+      gsap.set(card, { zIndex, delay: HOP })
+      if (on) {
+        gsap.to(card, {
+          keyframes: [
+            { y: -80, duration: HOP, ease: 'power1.out' },
+            { y: 0, duration: HOP, ease: 'power1.in' },
+          ],
+        })
+      } else {
+        gsap.to(card, { y: 0, duration: HOP * 2, ease: 'power1.inOut' })
+      }
+    })
   }
-  setScale()
-  window.addEventListener('resize', setScale)
-  gallery.style.transform = `scale3d(${scale}, ${scale}, ${scale}) rotateY(0deg)`
 
-  let scrollRot = 0
-  let autoRot = 0
-  let isScrolling = false
-  let inView = false
-  let idleTimer = null
+  let textTl = null
+  const showText = (active, animate) => {
+    if (textTl) textTl.kill()
+    panels.forEach(({ panel }, i) => panel.classList.toggle('is-active', i === active))
+    if (!animate) return
+    const { panel, words } = panels[active]
+    textTl = gsap
+      .timeline()
+      .fromTo(
+        panel,
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.2, ease: 'power1.inOut', clearProps: 'transform,opacity' }
+      )
+      .fromTo(
+        words,
+        { filter: 'blur(10px)', opacity: 0, y: 5 },
+        {
+          filter: 'blur(0px)',
+          opacity: 1,
+          y: 0,
+          duration: 0.2,
+          stagger: 0.02,
+          ease: 'power1.inOut',
+          clearProps: 'filter,transform,opacity',
+        },
+        0
+      )
+  }
 
-  // scroll through the section rotates the ring one full turn
-  ScrollTrigger.create({
-    trigger: '.showcase',
-    start: 'top top',
-    end: 'bottom bottom',
-    onUpdate: self => {
-      scrollRot = self.progress * 360
-      isScrolling = true
-      if (idleTimer) clearTimeout(idleTimer)
-      idleTimer = setTimeout(() => {
-        isScrolling = false
-      }, 160)
-    },
+  let active = 0
+  const go = step => {
+    active = (active + step + total) % total
+    placeCards(active, !reduceMotion)
+    showText(active, !reduceMotion)
+  }
+
+  placeCards(active, false)
+  showText(active, false)
+
+  root.querySelectorAll('.ps-btn').forEach(btn => {
+    btn.addEventListener('click', () => go(Number(btn.dataset.step)))
+  })
+  root.addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    e.preventDefault()
+    go(e.key === 'ArrowLeft' ? -1 : 1)
   })
 
-  // only run the render loop while the section is on screen
-  ScrollTrigger.create({
-    trigger: '.showcase',
-    start: 'top bottom',
-    end: 'bottom top',
-    onToggle: self => {
-      inView = self.isActive
-    },
-  })
-
-  gsap.ticker.add(() => {
-    if (!inView) return
-    if (!isScrolling && !reduceMotion) autoRot += 0.04
-    const rot = scrollRot + autoRot
-    gallery.style.transform = `scale3d(${scale}, ${scale}, ${scale}) rotateY(${rot}deg)`
-    for (const c of cards) {
-      const rel = (((c.angle + rot) % 360) + 360) % 360
-      const norm = rel > 180 ? 360 - rel : rel
-      c.el.style.opacity = String(Math.max(0.25, 1 - norm / 180))
-    }
+  // reveal the section as it scrolls into view
+  gsap.from('.showcase-inner > *', {
+    opacity: 0,
+    y: 40,
+    ease: 'none',
+    stagger: 0.08,
+    scrollTrigger: { trigger: '.showcase', start: 'top 78%', end: 'top 38%', scrub: true },
   })
 }
 
 // ------------------------------------------------------------------
-// Skillset — grouped tech stack. `i` = colored brand icon in
+// Skillset: grouped tech stack. `i` = colored brand icon in
 // public/media/icons/<i>.svg; `m` = monogram badge for tools with no
 // official logo (swap in a real icon later if one is provided).
 // ------------------------------------------------------------------
@@ -369,14 +328,67 @@ const SKILLS = [
       { n: 'Supabase', i: 'supabase' },
       { n: 'PostgreSQL', i: 'postgresql' },
       { n: 'MySQL', i: 'mysql' },
-      { n: 'InterSystems IRIS', m: 'IS' },
+    ],
+  },
+  {
+    group: 'AWS',
+    sections: [
+      {
+        label: 'Compute',
+        items: [{ n: 'ECS', i: 'aws-ecs' }, { n: 'Lambda', i: 'aws-lambda' }],
+      },
+      {
+        label: 'Networking',
+        items: [
+          { n: 'VPC', i: 'aws-vpc' },
+          { n: 'ALB', i: 'aws-alb' },
+          { n: 'Route 53', i: 'aws-route53' },
+          { n: 'NAT Gateway', i: 'aws-nat-gateway' },
+        ],
+      },
+      {
+        label: 'Data',
+        items: [{ n: 'RDS', i: 'aws-rds' }, { n: 'S3', i: 'aws-s3' }],
+      },
+      {
+        label: 'Security',
+        items: [
+          { n: 'WAF', i: 'aws-waf' },
+          { n: 'Cognito', i: 'aws-cognito' },
+          { n: 'Secrets Manager', i: 'aws-secrets-manager' },
+          { n: 'KMS', i: 'aws-kms' },
+          { n: 'ACM', i: 'aws-acm' },
+        ],
+      },
+      {
+        label: 'Monitoring',
+        items: [{ n: 'CloudWatch', i: 'aws-cloudwatch' }],
+      },
     ],
   },
   {
     group: 'Tools',
-    items: [{ n: 'Docker', i: 'docker' }, { n: 'Git', i: 'git' }, { n: 'Vercel', i: 'vercel' }, { n: 'ngrok', i: 'ngrok' }],
+    items: [
+      { n: 'Docker', i: 'docker' },
+      { n: 'Git', i: 'git' },
+      { n: 'GitHub Actions (CI/CD)', i: 'githubactions' },
+      { n: 'Vercel', i: 'vercel' },
+      { n: 'ngrok', i: 'ngrok' },
+    ],
   },
 ]
+
+function skillChips(items) {
+  const chips = items
+    .map(it => {
+      const visual = it.i
+        ? `<img class="skill-ico" src="/media/icons/${it.i}.svg" alt="" loading="lazy" decoding="async" />`
+        : `<span class="skill-mono">${it.m || it.n.slice(0, 2).toUpperCase()}</span>`
+      return `<span class="skill-chip">${visual}${it.n}</span>`
+    })
+    .join('')
+  return `<div class="skill-chips">${chips}</div>`
+}
 
 function initSkills() {
   const grid = document.getElementById('skills-grid')
@@ -384,15 +396,12 @@ function initSkills() {
   for (const g of SKILLS) {
     const row = document.createElement('div')
     row.className = 'skill-group'
-    const chips = g.items
-      .map(it => {
-        const visual = it.i
-          ? `<img class="skill-ico" src="/media/icons/${it.i}.svg" alt="" />`
-          : `<span class="skill-mono">${it.m || it.n.slice(0, 2).toUpperCase()}</span>`
-        return `<span class="skill-chip">${visual}${it.n}</span>`
-      })
-      .join('')
-    row.innerHTML = `<div class="skill-group-label">${g.group}</div><div class="skill-chips">${chips}</div>`
+    const body = g.sections
+      ? `<div class="skill-sections">${g.sections
+          .map(s => `<div><div class="skill-section-label">${s.label}</div>${skillChips(s.items)}</div>`)
+          .join('')}</div>`
+      : skillChips(g.items)
+    row.innerHTML = `<div class="skill-group-label">${g.group}</div>${body}`
     grid.appendChild(row)
   }
 
@@ -407,13 +416,20 @@ function initSkills() {
 }
 
 // ------------------------------------------------------------------
-// Achievements — vanilla port of the RotatingGradientRight component.
+// Achievements: vanilla port of the RotatingGradientRight component.
 // Each row: a photo framed inside a rotating conic-gradient glow, with
 // text beside it. Odd rows (2nd, 4th) flip sides. The glow only spins
 // while the section is on screen (heavy blurred compositing otherwise).
 // ------------------------------------------------------------------
 
 const ACHIEVEMENTS = [
+  {
+    title: 'PSA Code Sprint 2.0 2026',
+    result: '2nd Place',
+    org: 'PSA',
+    desc: 'Developed an agentic Vessel Exception Manager for PSA, taking 2nd place at the hackathon finals.',
+    img: '/media/psa.jpg',
+  },
   {
     title: 'SMU Hack for Cities 2026',
     result: 'Top 8 Finalist',
@@ -476,7 +492,7 @@ function initAchievements() {
     list.appendChild(row)
   })
 
-  // these photos are height:auto — they grow the page as they load, which
+  // these photos are height:auto, so they grow the page as they load, which
   // would leave Lenis's scroll limit stale; re-measure once each lands
   list.querySelectorAll('.ach-frame img').forEach(im => {
     if (im.complete) refreshScroll()

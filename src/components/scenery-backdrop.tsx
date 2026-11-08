@@ -3,7 +3,7 @@
 // Layered "Mount Iwate, sea of clouds" scenery. Pure CSS + SVG, no photo assets.
 // Two fixed planes: `scene` sits behind all content; `foreground` sits in front
 // (pointer-events: none) so cloud wisps drift over sections as you move between
-// them — that is the parallax "overlap" transition. Layer motion is written
+// them; that is the parallax "overlap" transition. Layer motion is written
 // directly to the DOM from Lenis (no per-frame React state), and disabled under
 // prefers-reduced-motion.
 import { useEffect, useRef } from 'react';

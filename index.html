@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Kevan Soon — Designer & Engineer</title>
+    <title>Kevan Soon</title>
     <meta
       name="description"
-      content="Kevan Soon — software & AI engineer and product developer in Singapore."
+      content="Kevan Soon, software & AI engineer and product developer in Singapore."
     />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -36,7 +36,7 @@
       <div class="hero-stage">
         <div class="hero-text hero-text--left">
           <h1 class="word">Software engineer</h1>
-          <p>Working with web frameworks and APIs.</p>
+          <p>Building full-stack web apps and deploying them to the cloud.</p>
         </div>
 
         <div class="hero-face">
@@ -53,11 +53,7 @@
 
         <div class="hero-text hero-text--right">
           <h2 class="word mono">AI engineer</h2>
-          <p>RAG and LLM systems.</p>
-          <pre class="snippet" aria-hidden="true"><span class="tag">&lt;html</span> <span class="attr">class</span>=<span class="str">"engineer"</span><span class="tag">&gt;</span>
-  stack: [<span class="str">"Next.js"</span>, <span class="str">"Python"</span>, <span class="str">"AI"</span>]
-  based: <span class="str">"Singapore"</span>
-<span class="tag">&lt;/html&gt;</span></pre>
+          <p>Designing agentic workflows and RAG systems.</p>
         </div>
       </div>
 
@@ -74,37 +70,52 @@
           <div class="about-label">About</div>
           <h2>Engineering across AI, web &amp; product.</h2>
           <p class="about-lead">
-            I'm a software engineering undergraduate at Singapore Management University —
-            currently an AI Engineer Intern at HTX and a citizen developer with the
+            I'm a software engineering undergraduate at Singapore Management University,
+            previously an AI Engineer Intern at HTX and currently a citizen developer with the
             People's Association, building tools people actually use.
           </p>
           <div class="about-cols">
             <div>
               <h3>Education</h3>
               <ul>
-                <li>
-                  <span>2024 – 2028</span> BSc Software Engineering, SMU
-                  <small>2nd Major in Product Development</small>
+                <li class="xp-row">
+                  <div class="xp-logo"><img src="/media/logos/smu.svg" alt="" width="89" height="47" /></div>
+                  <div>
+                    <span>2024 – 2028</span> BSc Software Engineering, SMU
+                    <small>2nd Major in Product Development</small>
+                  </div>
                 </li>
-                <li>
-                  <span>2019 – 2022</span> Dip. Business Information Systems, Republic Polytechnic
-                  <small>Graduated with Merit</small>
+                <li class="xp-row">
+                  <div class="xp-logo"><img src="/media/logos/rp.webp" alt="" width="98" height="111" /></div>
+                  <div>
+                    <span>2019 – 2022</span> Dip. Business Information Systems, Republic Polytechnic
+                    <small>Graduated with Merit</small>
+                  </div>
                 </li>
               </ul>
             </div>
             <div>
               <h3>Experience</h3>
               <ul>
-                <li>
-                  <span>2026 –</span> AI Engineer Intern, HTX
-                  <small>Q Team</small>
+                <li class="xp-row">
+                  <div class="xp-logo xp-logo--htx"><img src="/media/logos/htx.webp" alt="" width="115" height="160" /></div>
+                  <div>
+                    <span>2026 –</span> AI Engineer Intern, HTX
+                    <small>Q Team</small>
+                  </div>
                 </li>
-                <li>
-                  <span>2025 –</span> Software Engineer, People's Association
-                  <small>Building Churp, a garden booking system</small>
+                <li class="xp-row">
+                  <div class="xp-logo"><img src="/media/logos/pa.webp" alt="" width="160" height="160" /></div>
+                  <div>
+                    <span>2025 –</span> Software Engineer, People's Association
+                    <small>Building Churp, a garden booking system</small>
+                  </div>
                 </li>
-                <li>
-                  <span>2021</span> Application Developer Intern, XIOHOO
+                <li class="xp-row">
+                  <div class="xp-logo"><img src="/media/logos/xiohoo.webp" alt="" width="153" height="160" /></div>
+                  <div>
+                    <span>2021</span> Application Developer Intern, XIOHOO
+                  </div>
                 </li>
               </ul>
             </div>
@@ -125,16 +136,20 @@
         </div>
       </section>
 
-      <!-- Selected Work: rotating 3D project gallery (ported from the CircularGallery component) -->
+      <!-- Selected Work: card-stack project showcase (ported from the ProjectShowcase component) -->
       <section class="showcase" id="work">
-        <div class="showcase-stage">
-          <div class="showcase-head">
-            <div class="about-label">Selected Work</div>
-            <h2 class="showcase-title">Things I've built</h2>
-            <p class="showcase-sub">Scroll to rotate</p>
-          </div>
-          <div class="gallery-wrap">
-            <div class="gallery" id="gallery" role="region" aria-label="Project gallery"></div>
+        <div class="showcase-inner">
+          <div class="about-label">Selected Work</div>
+          <h2>Things I've built</h2>
+          <div class="ps" id="project-showcase" role="group" aria-roledescription="carousel" aria-label="Projects">
+            <div class="ps-stack"></div>
+            <div class="ps-info">
+              <div class="ps-texts" aria-live="polite"></div>
+              <div class="ps-nav">
+                <button type="button" class="ps-btn" data-step="-1" aria-label="Previous project"><span>Previous</span></button>
+                <button type="button" class="ps-btn" data-step="1" aria-label="Next project"><span>Next</span></button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
