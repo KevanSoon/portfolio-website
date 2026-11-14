@@ -1,49 +1,19 @@
 import Lenis from 'lenis'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { initSnakeHero } from './snake-hero.js'
 
 gsap.registerPlugin(ScrollTrigger)
 
 // ------------------------------------------------------------------
-// Hero-only page. The lightning portrait is a single hardware-decoded
-// <video> whose currentTime is driven by scroll, with no frame sequences,
-// no ImageBitmap churn. Memory stays in the tens of MB and the GPU only
-// ever holds one video texture, which is what the previous frame engine
-// could not guarantee (it faulted the GPU process with D3D11 texture
-// churn on some machines).
+// Hero: a pinned WebGL snake stage (src/snake-hero.js). Lenis smooths
+// the scroll and drives ScrollTrigger, which scrubs the snake timeline.
 // ------------------------------------------------------------------
 
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-const video = document.getElementById('hero-video')
 
-let duration = 0
-let targetT = 0 // currentTime demanded by scroll
-let curT = 0 // eased currentTime actually applied
 let lenis = null
-
-function primeVideo() {
-  // a muted play→pause forces the browser to buffer so seeks are instant
-  return new Promise(resolve => {
-    const ready = () => (video.readyState >= 3 ? resolve() : null)
-    if (Number.isFinite(video.duration) && video.duration > 0) duration = video.duration
-    video.addEventListener('loadedmetadata', () => {
-      duration = video.duration || duration
-    })
-    video.addEventListener('canplaythrough', resolve, { once: true })
-    video.addEventListener('loadeddata', ready, { once: true })
-    video.muted = true
-    const p = video.play()
-    if (p && p.then) {
-      p.then(() => {
-        video.pause()
-        video.currentTime = 0
-        ready()
-      }).catch(() => ready())
-    }
-    // safety: never hang the loader on a stubborn buffer
-    setTimeout(resolve, 4000)
-  })
-}
+let snake = null
 
 function initScroll() {
   lenis = new Lenis({ smoothWheel: !reduceMotion })
@@ -51,59 +21,10 @@ function initScroll() {
   gsap.ticker.add(t => lenis.raf(t * 1000))
   gsap.ticker.lagSmoothing(0)
 
-  // video scrub finishes a little before the About panel starts covering,
-  // so the lightning fully ignites and settles before it's hidden
-  ScrollTrigger.create({
-    trigger: '.hero-spacer',
-    start: 'top top',
-    end: '52% top',
-    onUpdate: self => {
-      if (duration) targetT = self.progress * duration
-    },
-  })
+  // pinned snake stage; its pin spacer must exist before the triggers below measure
+  snake = initSnakeHero({ reduceMotion })
 
-  // ease currentTime toward the scroll target; skip while a seek is pending
-  gsap.ticker.add(() => {
-    if (!duration) return
-    curT += (targetT - curT) * (reduceMotion ? 1 : 0.12)
-    if (Math.abs(targetT - curT) < 0.004) curT = targetT
-    if (!video.seeking) {
-      try {
-        video.currentTime = curT
-      } catch (e) {
-        /* seek not ready yet */
-      }
-    }
-  })
-
-  // fade the scroll hint out as soon as the user starts
-  gsap.to('.scroll-hint', {
-    opacity: 0,
-    ease: 'none',
-    scrollTrigger: { trigger: '.hero-spacer', start: 'top top', end: '6% top', scrub: true },
-  })
-
-  // word handoff, scroll-linked:
-  //   "designer" rises in → holds → rises up and out, while "<coder>" rises in
-  if (!reduceMotion) {
-    gsap.set(['.hero-text--left', '.hero-text--right'], { opacity: 0, y: 60 })
-    gsap
-      .timeline({ scrollTrigger: { trigger: '.hero-spacer', start: 'top top', end: '45% top', scrub: true } })
-      // designer in (0 → 1)
-      .to('.hero-text--left', { opacity: 1, y: 0, ease: 'none', duration: 1 }, 0)
-      // designer holds (1 → 2)
-      // designer out, up (2 → 3.2)  +  coder in (2 → 3.2)
-      .to('.hero-text--left', { opacity: 0, y: -70, ease: 'none', duration: 1.2 }, 2)
-      .fromTo(
-        '.hero-text--right',
-        { opacity: 0, y: 60 },
-        { opacity: 1, y: 0, ease: 'none', duration: 1.2 },
-        2
-      )
-    // coder holds from 3.2 → end
-  }
-
-  // reveal the About content as the panel slides up
+  // reveal the About columns as they scroll in after the stage
   gsap.from('.about-inner > *', {
     opacity: 0,
     y: 40,
@@ -126,7 +47,7 @@ function initScroll() {
       lenis,
       ScrollTrigger,
       tick: () => gsap.ticker.tick(),
-      state: () => ({ duration, targetT, curT, videoTime: video.currentTime, readyState: video.readyState }),
+      snake: () => snake,
     }
   }
 }
@@ -516,7 +437,7 @@ async function boot() {
 
   const count = document.querySelector('#preloader .count')
   const bar = document.querySelector('#preloader .bar span')
-  // there is only one asset to wait for; animate a short determinate-ish fill
+  // the snake is built in code; only the web fonts are worth waiting for
   let pct = 0
   const fill = setInterval(() => {
     pct = Math.min(pct + Math.random() * 18, 92)
@@ -524,7 +445,10 @@ async function boot() {
     bar.style.transform = `scaleX(${pct / 100})`
   }, 120)
 
-  await primeVideo()
+  if (document.fonts && document.fonts.ready) {
+    // safety: never hang the loader on a slow font
+    await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 2500))])
+  }
   clearInterval(fill)
   count.textContent = '100%'
   bar.style.transform = 'scaleX(1)'
@@ -556,10 +480,10 @@ async function boot() {
     },
   })
   if (!reduceMotion) {
-    // the split headline is revealed on scroll (see initScroll); on load we
-    // only bring in the face and chrome so there is a reason to scroll
+    // the role text is revealed on scroll (see snake-hero.js); on load we
+    // only bring in the snake and chrome so there is a reason to scroll
     intro.from(
-      ['.hero-face', 'header', '.scroll-hint'],
+      ['.intro', '#gl', 'header', '.seal', '.phase'],
       { opacity: 0, y: 20, duration: 0.8, stagger: 0.1, ease: 'power3.out' },
       '-=0.3'
     )

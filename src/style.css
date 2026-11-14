@@ -1,5 +1,5 @@
 :root {
-  --bg: #d4d4d4; /* matched to the video portrait's studio-grey backdrop */
+  --bg: #d4d4d4; /* studio grey the snake stage starts on */
   --panel: #ffffff;
   --ink: #16150f;
   --dim: #6f6a5c;
@@ -7,6 +7,11 @@
   --shu: #e0402a;
   --font-body: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-han: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+  /* driven by src/snake-hero.js as the stage darkens during the charge */
+  --hero-bg: var(--bg);
+  --hero-fg: var(--ink);
+  --bar-fg: var(--ink);
 }
 
 * {
@@ -94,7 +99,7 @@ header {
   font-weight: 500;
   font-size: 0.82rem;
   letter-spacing: 0.28em;
-  color: var(--ink);
+  color: var(--bar-fg);
   text-decoration: none;
 }
 
@@ -112,176 +117,276 @@ header {
   font-weight: 400;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--dim);
+  color: var(--bar-fg);
+  opacity: 0.75;
   text-decoration: none;
-  transition: color 0.25s;
+  transition: color 0.25s, opacity 0.25s;
 }
 
 .links a:hover {
   color: var(--shu);
+  opacity: 1;
 }
 
 /* ---------------------------------------------------------------- */
-/* Hero                                                              */
+/* Hero: pinned snake stage                                          */
 /* ---------------------------------------------------------------- */
 
-/* fixed hero background: the About panel slides up over this */
-.hero-fixed {
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-}
-
-/* transparent spacer in normal flow: its height is the hero's scroll distance */
-.hero-spacer {
+/* one full-screen stage pinned by ScrollTrigger; the snake holds the
+   centre column, the role text sits either side of it */
+#hero {
   position: relative;
-  z-index: 0;
-  height: 250vh;
-}
-
-.hero-stage {
   height: 100vh;
   height: 100svh;
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: clamp(0.5rem, 3vw, 3rem);
-  padding: 0 clamp(1.2rem, 5vw, 5rem);
+  min-height: 520px;
+  overflow: hidden;
+  background: var(--hero-bg);
+  color: var(--hero-fg);
 }
 
-.hero-stage > * {
-  min-width: 0; /* keep the 1fr text columns balanced so the face stays centered */
-}
-
-.hero-face {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.hero-face video {
-  height: min(74vh, 620px);
-  width: auto;
-  max-width: 46vw;
-  object-fit: contain;
+#gl {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   display: block;
-  /* feather the rectangle edges into the page so the video's backdrop
-     blends seamlessly, even when the lightning brightens it */
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent),
-    linear-gradient(180deg, transparent, #000 4%, #000 96%, transparent);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent),
-    linear-gradient(180deg, transparent, #000 4%, #000 96%, transparent);
-  mask-composite: intersect;
+  z-index: 3;
+  pointer-events: none;
 }
 
-.hero-text {
-  max-width: 30ch;
-}
-
-.hero-text--left {
-  text-align: right;
-  justify-self: end;
-}
-
-.hero-text--right {
-  text-align: left;
-  justify-self: start;
-}
-
-.word {
-  font-weight: 200;
-  font-size: clamp(2.4rem, 6vw, 5.2rem);
+.glyph {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -52%);
+  font-family: var(--font-han);
+  font-weight: 900;
   line-height: 1;
+  font-size: min(88vh, 92vw);
+  color: var(--hero-fg);
+  opacity: 0.045;
+  z-index: 1;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* no WebGL: the glyph carries the stage */
+.hero--static .glyph {
+  opacity: 0.14;
+}
+
+/* greeting above the coiled snake; fades up and away once the snake rises */
+.intro {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: clamp(4.75rem, 12vh, 7.5rem);
+  z-index: 4;
+  padding: 0 1.25rem;
+  text-align: center;
+  font-weight: 200;
+  font-size: clamp(2rem, 4.6vw, 3.9rem);
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  color: var(--hero-fg);
+  text-wrap: balance;
+  pointer-events: none;
+}
+
+.role {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  max-width: 30ch;
+  visibility: hidden;
+}
+
+.role h1,
+.role h2 {
+  font-weight: 200;
+  line-height: 0.98;
+  font-size: clamp(2.3rem, 5.4vw, 4.6rem);
   letter-spacing: -0.01em;
-  color: var(--ink);
-  margin-bottom: 1.1rem;
+  margin-bottom: 1.3rem;
 }
 
-.word.mono {
-  font-family: var(--font-mono);
-  font-weight: 400;
-  font-size: clamp(2rem, 5vw, 4.4rem);
-  letter-spacing: -0.02em;
-}
-
-.hero-text p {
+.role p {
   font-weight: 300;
-  font-size: clamp(0.82rem, 1vw, 0.95rem);
-  line-height: 1.7;
-  color: var(--dim);
+  font-size: clamp(0.85rem, 1vw, 0.95rem);
+  line-height: 1.6;
+  opacity: 0.68;
+  max-width: 26ch;
 }
 
-.hero-text--left p {
+.role-se {
+  right: calc(50% + 31vh);
+  text-align: right;
+}
+
+.role-se p {
   margin-left: auto;
 }
 
-.word .ltr {
-  display: inline-block;
+.role-ai {
+  left: calc(50% + 31vh);
 }
 
-/* ---------------------------------------------------------------- */
-/* Scroll hint                                                       */
-/* ---------------------------------------------------------------- */
+.role-ai h2 {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+}
 
-.scroll-hint {
+.seal {
   position: absolute;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
+  left: clamp(1.2rem, 3.4vw, 2.2rem);
+  bottom: 1.9rem;
+  z-index: 4;
   display: flex;
-  flex-direction: column;
   align-items: center;
   gap: 0.9rem;
-  font-size: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.seal .chop {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  background: var(--shu);
+  color: #fff;
+  border-radius: 5px;
+  font-family: var(--font-han);
+  font-weight: 900;
+  font-size: 26px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.seal small {
+  display: block;
+  font-size: 0.72rem;
+  opacity: 0.75;
+  margin-top: 0.25rem;
+}
+
+.phase {
+  position: absolute;
+  right: clamp(1.2rem, 3.4vw, 2.2rem);
+  bottom: 2.25rem;
+  z-index: 4;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.phase b {
   font-weight: 400;
+  color: var(--shu);
+  margin-right: 0.6rem;
+}
+
+.cue {
+  position: absolute;
+  left: 50%;
+  bottom: 2.4rem;
+  transform: translateX(-50%);
+  z-index: 4;
+  font-size: 0.72rem;
   letter-spacing: 0.4em;
   text-transform: uppercase;
-  color: var(--dim);
+  opacity: 0.8;
 }
 
-.scroll-hint::after {
+.cue::after {
   content: '';
+  display: block;
   width: 1px;
-  height: 46px;
-  background: linear-gradient(180deg, var(--shu), transparent);
-  animation: hint 2.2s ease-in-out infinite;
+  height: 26px;
+  margin: 0.6rem auto 0;
+  background: currentColor;
+  transform-origin: top;
+  animation: drip 1.8s ease-in-out infinite;
 }
 
-@keyframes hint {
+@keyframes drip {
   0% {
     transform: scaleY(0);
-    transform-origin: top;
-  }
-  45% {
-    transform: scaleY(1);
-    transform-origin: top;
   }
   55% {
     transform: scaleY(1);
-    transform-origin: bottom;
   }
   100% {
-    transform: scaleY(0);
-    transform-origin: bottom;
+    transform: scaleY(1);
+    opacity: 0;
   }
 }
 
+/* the About intro, opened through the ring; padding and width match
+   .about below so the intro and the columns share one left edge. The
+   intro sits low in the sheet so it leads straight into the columns
+   once the stage unpins, instead of leaving half a screen of white. */
+#portal {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: var(--panel);
+  color: var(--ink);
+  visibility: hidden;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 clamp(1.5rem, 8vw, 8rem) clamp(1.5rem, 6vh, 3.5rem);
+}
+
+.portal-inner {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* intro text on the left, photo on the right, one row */
+.about-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+.about-intro .about-lead {
+  margin-bottom: 0;
+}
+
+.about-photo {
+  margin: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.12);
+}
+
+.about-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
 /* ---------------------------------------------------------------- */
-/* About: white panel that slides up over the fixed hero             */
+/* About: the intro lives in #portal; the columns follow on white    */
 /* ---------------------------------------------------------------- */
 
 .about {
   position: relative;
-  z-index: 2; /* above the fixed hero (z-index 1) so it covers it */
-  background: #ffffff;
+  z-index: 2;
+  background: var(--panel);
   color: var(--ink);
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  padding: clamp(4rem, 12vh, 9rem) clamp(1.5rem, 8vw, 8rem);
-  box-shadow: 0 -30px 60px rgba(0, 0, 0, 0.12); /* soft lip as it slides up */
+  padding: 1rem clamp(1.5rem, 8vw, 8rem) clamp(4rem, 12vh, 9rem);
 }
 
 .about-inner {
@@ -299,7 +404,8 @@ header {
   margin-bottom: 1.4rem;
 }
 
-.about h2 {
+.about h2,
+.about-intro h2 {
   font-weight: 200;
   font-size: clamp(1.8rem, 4vw, 3.1rem);
   line-height: 1.15;
@@ -421,7 +527,7 @@ header {
 
 .skills {
   position: relative;
-  z-index: 2; /* above the fixed hero, like .about */
+  z-index: 2;
   background: #ffffff;
   color: var(--ink);
   padding: clamp(4rem, 12vh, 8rem) clamp(1.5rem, 8vw, 8rem);
@@ -534,7 +640,7 @@ header {
 
 .showcase {
   position: relative;
-  z-index: 2; /* above the fixed hero, like .about */
+  z-index: 2;
   background: #ffffff;
   color: var(--ink);
   padding: clamp(4rem, 12vh, 8rem) clamp(1.5rem, 8vw, 8rem);
@@ -703,7 +809,7 @@ header {
 
 .achievements {
   position: relative;
-  z-index: 2; /* above the fixed hero, like the other content sections */
+  z-index: 2;
   background: #ffffff;
   color: var(--ink);
   padding: clamp(4rem, 12vh, 8rem) clamp(1.5rem, 8vw, 8rem) clamp(6rem, 14vh, 10rem);
@@ -836,45 +942,60 @@ header {
     padding: 1.1rem 1.25rem;
   }
 
-  .hero-stage {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto auto;
-    justify-items: center;
-    text-align: center;
-    gap: 1.4rem;
-    padding-top: 4.5rem;
+  /* stacked: SE text above the snake, AI text below it */
+  .role {
+    top: auto;
+    max-width: 60vw;
   }
 
-  .hero-face {
-    order: -1;
+  .role-se {
+    left: 1.25rem;
+    right: auto;
+    top: 5.5rem;
+    text-align: left;
   }
 
-  .hero-face video {
-    height: 42vh;
-    max-width: 82vw;
+  .role-se p {
+    margin-left: 0;
   }
 
-  .hero-text {
-    max-width: 34ch;
+  .role-ai {
+    left: auto;
+    right: 1.25rem;
+    bottom: 6.5rem;
+    text-align: right;
   }
 
-  .hero-text--left,
-  .hero-text--right {
-    text-align: center;
-    justify-self: center;
+  .role-ai p {
+    margin-left: auto;
   }
 
-  .hero-text--left p,
-  .hero-text--right p {
-    margin: 0 auto;
-  }
-
-  .scroll-hint {
+  .phase {
     display: none;
   }
 
+  .cue {
+    bottom: 6rem;
+  }
+
+  #portal {
+    padding: 0 1.5rem 1.75rem;
+  }
+
+  /* stacked: photo under the text, cropped shorter so the intro fits one screen */
+  .about-intro {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+
+  .about-photo img {
+    aspect-ratio: 16 / 9;
+    max-height: 30vh;
+    object-position: 30% 62%;
+  }
+
   .about {
-    padding: 4rem 1.5rem;
+    padding: 0.75rem 1.5rem 4rem;
   }
 
   .about-cols {
@@ -905,7 +1026,7 @@ header {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scroll-hint::after {
+  .cue::after {
     animation: none;
   }
 
